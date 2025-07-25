@@ -36,9 +36,10 @@ public class Startup
         {
             // Prevent WS-Federation claim names being written to tokens
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-            
-            services.AddAuthentication(options => {
-                
+
+        services.AddRazorPages().AddRazorRuntimeCompilation();
+        services.AddAuthentication(options => {
+
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })

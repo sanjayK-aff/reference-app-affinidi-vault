@@ -12,38 +12,42 @@
 
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow mb-3" aria-label="Main navigation">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index"> Affinidi Login Demo</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-page="/Index">
+                    <img src="~/Affinidi_FC_RGB_Symbol.jpg" alt="Affinidi Logo" width="32" height="32" class="me-2" />
+                    Affinidi
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
                     aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Issuer">Issuer</a>
+                        </li>
+                         <li class="nav-item"></li>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Logout">Holder</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/UserDetail">User Details</a>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/UserDetail">Logged-in User Details</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
+                       
                     </ul>
-
-                </div class="btn btn-secondary float-right">
-                <div>
-
-                    @if (!User.Identity.IsAuthenticated)
-                    {
-                        <button type="button" class="btn" onclick="window.location.href='/Login'"> login </button>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn" onclick="window.location.href='/Logout'"> logout </button>
-                    }
-
+                    <div class="d-flex">
+                        @if (!User.Identity.IsAuthenticated)
+                        {
+                            <button type="button" class="btn btn-outline-primary me-2" onclick="window.location.href='/Login'" aria-label="Login">Login</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-outline-danger me-2" onclick="window.location.href='/Logout'" aria-label="Logout">Logout</button>
+                        }
+                    </div>
                 </div>
             </div>
         </nav>
@@ -53,6 +57,13 @@
             @RenderBody()
         </main>
     </div>
+
+    <footer class="footer mt-auto py-3 bg-light border-top">
+        <div class="container text-center">
+            <span class="text-muted">&copy; @DateTime.Now.Year Affinidi. All rights reserved.</span>
+            <span class="ms-3"><a href="generator/dotnet/Affinidi_FC_RGB_Symbol.jpg" target="_blank" rel="noopener">Docs</a> | <a href="/Privacy">Privacy</a></span>
+        </div>
+    </footer>
 
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

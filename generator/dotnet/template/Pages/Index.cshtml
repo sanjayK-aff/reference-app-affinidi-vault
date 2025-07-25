@@ -1,20 +1,23 @@
-﻿@page
+﻿
+@page
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <div style="padding: 2rem;">
-        <h2 class="display-4">Welcome to Dotnet 8.0 reference app</h2>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h2 class="display-5 mb-4">Welcome to the Affinidi Demo App</h2>
+                    <p class="lead mb-3">Experience secure login powered by Affinidi and .NET 8.0.</p>
+                    <a href="/Login" class="btn btn-primary btn-lg rounded-pill mb-3">Login with Affinidi</a>
+                    <p class="mb-2">Or view your <a href="/UserDetail">User Details</a> directly.</p>
+                    <hr />
+                    <p class="mt-3">Learn more about <a href="https://docs.affinidi.com/docs" target="_blank" rel="noopener">Affinidi login and other products</a>.</p>
+                </div>
+            </div>
+        </div>
     </div>
-    <div style="padding: 2rem ;">
-
-        <p style="padding-bottom: 1rem;"> <b>Click on Login to Experience Affinidi Login</b> </p>
-        <p>OR Click <a href="/UserDetail"> User details menu</a> directly to login</p>
-
-    </div>
-
-    <p style="font-weight: bold;">Learn more about <a href="https://docs.affinidi.com/docs">Affinidi login and other
-            products</a>.</p>
 </div>

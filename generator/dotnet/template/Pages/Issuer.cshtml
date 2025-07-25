@@ -1,0 +1,35 @@
+@page
+@model Affinidi_Login_Demo_App.IssuerModel
+@{
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-4">Issuer - Personal Details</h2>
+                    <form method="post">
+                        <div class="mb-3">
+                            <label for="givenName" class="form-label">Given Name</label>
+                            <input type="text" class="form-control" id="givenName" name="GivenName" value="John" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="familyName" class="form-label">Family Name</label>
+                            <input type="text" class="form-control" id="familyName" name="FamilyName" value="Doe" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="Email" value="john.doe@example.com" />
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 rounded-pill">Start Issuance</button>
+                    </form>
+                    @if (Model.IssuanceStarted)
+                    {
+                        <div class="alert alert-info mt-3">Issuance started (dummy method called).</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
