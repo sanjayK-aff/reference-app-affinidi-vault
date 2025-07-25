@@ -1,44 +1,56 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 
 namespace Affinidi_Login_Demo_App.Util
 {
     public class ProjectScopedToken
     {
-        public string SignPayload(string tokenId, string audience, string privateKey, string keyId, string? passphrase = null)
+        public string SignPayload(string tokenId, string audience, string privateKey, string keyId, string? passphrase)
         {
             var issueTimeInSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(privateKey));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var rsa = RSA.Create();
+            if (!string.IsNullOrEmpty(passphrase))
             {
-                new Claim(JwtRegisteredClaimNames.Iss, tokenId),
-                new Claim(JwtRegisteredClaimNames.Sub, tokenId),
-                new Claim(JwtRegisteredClaimNames.Aud, audience),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Exp, (issueTimeInSeconds + 5 * 60).ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, issueTimeInSeconds.ToString())
+                rsa.ImportFromEncryptedPem(privateKey, passphrase);
+            }
+            else
+            {
+                rsa.ImportFromPem(privateKey);
+            }
+
+            var securityKey = new RsaSecurityKey(rsa) { KeyId = keyId };
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
+
+            var header = new JwtHeader(credentials);
+
+            var payload = new JwtPayload
+            {
+                { "iss", tokenId },
+                { "sub", tokenId },
+                { "aud", audience },
+                { "jti", Guid.NewGuid().ToString() },
+                { "exp", issueTimeInSeconds + 5 * 60 },
+                { "iat", issueTimeInSeconds }
             };
 
-            var token = new JwtSecurityToken(
-                claims: claims,
-                signingCredentials: credentials
-            );
-
+            var token = new JwtSecurityToken(header, payload);
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // Simulate POST to audience to get user access token
-        public string GetUserAccessToken(string tokenId, string audience, string privateKey, string? passphrase, string keyId)
+        public async Task<string> GetUserAccessTokenAsync(string tokenId, string audience, string privateKey, string? passphrase, string keyId)
         {
-            // Simulate JWT creation
             var jwt = SignPayload(tokenId, audience, privateKey, keyId, passphrase);
 
-            // Simulate payload as per TS
-            var input = new System.Collections.Generic.Dictionary<string, string>
+            var input = new Dictionary<string, string>
             {
                 {"grant_type", "client_credentials"},
                 {"scope", "openid"},
@@ -47,25 +59,41 @@ namespace Affinidi_Login_Demo_App.Util
                 {"client_id", tokenId}
             };
 
-            // In a real implementation, use HttpClient to POST to 'audience' with input as x-www-form-urlencoded
-            // Here, simulate by returning a dummy access token
-            return $"dummy_access_token_{Guid.NewGuid()}";
+            using var httpClient = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Post, audience)
+            {
+                Content = new FormUrlEncodedContent(input)
+            };
+
+            var response = await httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody);
+
+            return tokenResponse?["access_token"];
         }
 
-        // Simulate POST to API Gateway to get project-scoped token
-        public string FetchProjectScopedToken(string apiGatewayUrl, string projectId, string tokenId, string audience, string privateKey, string keyId, string? passphrase = null)
+        public async Task<string> FetchProjectScopedTokenAsync(string apiGatewayUrl, string projectId, string tokenId, string audience, string privateKey, string keyId, string? passphrase)
         {
-            // Step 1: Get user access token (simulate POST to audience)
-            var userAccessToken = GetUserAccessToken(tokenId, audience, privateKey, passphrase, keyId);
+            var userAccessToken = await GetUserAccessTokenAsync(tokenId, audience, privateKey, passphrase, keyId);
 
-            // Step 2: Simulate POST to API Gateway for project-scoped token
-            var payload = new System.Collections.Generic.Dictionary<string, string>
-            {
-                {"projectId", projectId}
-            };
-            // In a real implementation, use HttpClient to POST to apiGatewayUrl/iam/v1/sts/create-project-scoped-token
-            // with Authorization: Bearer userAccessToken and payload as JSON
-            return $"dummy_project_scoped_token_for_{projectId}_with_{userAccessToken}";
+            using var httpClient = new HttpClient();
+            var requestUrl = $"{apiGatewayUrl}/iam/v1/sts/create-project-scoped-token";
+            var payload = new { projectId };
+            var jsonPayload = JsonConvert.SerializeObject(payload);
+
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userAccessToken);
+            request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody);
+
+            return tokenResponse?["accessToken"];
         }
     }
 }

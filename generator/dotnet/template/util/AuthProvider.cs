@@ -70,7 +70,7 @@ namespace Affinidi_Login_Demo_App.Util
             bool shouldRefreshToken = await ShouldRefreshToken();
             if (shouldRefreshToken)
             {
-                projectScopedToken = projectScopedTokenInstance.FetchProjectScopedToken(apiGatewayUrl, projectId, tokenId, tokenEndpoint, privateKey, keyId, passphrase);
+                projectScopedToken = await projectScopedTokenInstance.FetchProjectScopedTokenAsync(apiGatewayUrl, projectId, tokenId, tokenEndpoint, privateKey, keyId, passphrase);
             }
             return projectScopedToken;
         }

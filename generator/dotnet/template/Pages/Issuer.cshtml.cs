@@ -33,6 +33,8 @@ namespace Affinidi_Login_Demo_App
             };
             AuthProvider authProvider = new AuthProvider(authProviderParams);
             var token = await authProvider.FetchProjectScopedTokenAsync();
+
+            
             Console.WriteLine($"Project Scoped Token: {token}");
             IssuanceStarted = true;
         }
