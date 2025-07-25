@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using Affinidi_Login_Demo_App.Util;
 
+using Microsoft.Extensions.Logging;
+
 namespace Affinidi_Login_Demo_App.Util
 {
     public class IotaTokenOutput
@@ -32,7 +34,7 @@ namespace Affinidi_Login_Demo_App.Util
         private readonly string projectId;
         private readonly string apiGatewayUrl;
         private readonly string tokenEndpoint;
-        private readonly ProjectScopedToken projectScopedTokenInstance;
+        private readonly ProjectScopedToken _projectScopedTokenInstance;
         // Dummy Jwt and Iota classes for demonstration
         private readonly Jwt jwt;
         private readonly Iota iotaInstance;
@@ -50,7 +52,7 @@ namespace Affinidi_Login_Demo_App.Util
             keyId = param.KeyId ?? param.TokenId;
             privateKey = param.PrivateKey;
             passphrase = param.Passphrase;
-            projectScopedTokenInstance = new ProjectScopedToken();
+            _projectScopedTokenInstance = new ProjectScopedToken();
             jwt = new Jwt();
             iotaInstance = new Iota();
         }
@@ -67,11 +69,15 @@ namespace Affinidi_Login_Demo_App.Util
 
         public async Task<string> FetchProjectScopedTokenAsync()
         {
+             
             bool shouldRefreshToken = await ShouldRefreshToken();
             if (shouldRefreshToken)
             {
-                projectScopedToken = await projectScopedTokenInstance.FetchProjectScopedTokenAsync(apiGatewayUrl, projectId, tokenId, tokenEndpoint, privateKey, keyId, passphrase);
+                projectScopedToken = await _projectScopedTokenInstance.FetchProjectScopedTokenAsync(apiGatewayUrl, projectId, tokenId, tokenEndpoint, privateKey, keyId, passphrase);
             }
+
+           
+
             return projectScopedToken;
         }
 
