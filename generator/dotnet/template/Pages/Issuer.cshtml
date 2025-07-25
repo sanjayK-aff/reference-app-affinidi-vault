@@ -8,28 +8,64 @@
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h2 class="mb-4">Issuer - Personal Details</h2>
-                    <form method="post">
+                    <h2 class="mb-4">Personal & Education Details</h2>
+                    <form id="issuerForm">
                         <div class="mb-3">
                             <label for="givenName" class="form-label">Given Name</label>
-                            <input type="text" class="form-control" id="givenName" name="GivenName" value="John" />
+                            <input type="text" class="form-control" id="givenName" name="GivenName" value="@Model.GivenName" />
                         </div>
                         <div class="mb-3">
                             <label for="familyName" class="form-label">Family Name</label>
-                            <input type="text" class="form-control" id="familyName" name="FamilyName" value="Doe" />
+                            <input type="text" class="form-control" id="familyName" name="FamilyName" value="@Model.FamilyName" />
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="Email" value="john.doe@example.com" />
+                            <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" />
+                        </div>
+                        <hr />
+                        <h5 class="mb-3">Education Details</h5>
+                        <div class="mb-3">
+                            <label for="institutionName" class="form-label">Institution Name</label>
+                            <input type="text" class="form-control" id="institutionName" name="Education.institutionName" value="@Model.Education.institutionName" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="dateFrom" class="form-label">Date From</label>
+                            <input type="text" class="form-control" id="dateFrom" name="Education.dateFrom" value="@Model.Education.dateFrom" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="dateTo" class="form-label">Date To</label>
+                            <input type="text" class="form-control" id="dateTo" name="Education.dateTo" value="@Model.Education.dateTo" />
                         </div>
                         <button type="submit" class="btn btn-success w-100 rounded-pill">Start Issuance</button>
                     </form>
-                    @if (Model.IssuanceStarted)
-                    {
-                        <div class="alert alert-info mt-3">Issuance started (dummy method called).</div>
-                    }
+                    <div id="issuanceResult"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('issuerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {};
+    formData.forEach((value, key) => {
+        // Support nested Education fields
+        if (key.startsWith('Education.')) {
+            if (!data.Education) data.Education = {};
+            data.Education[key.replace('Education.', '')] = value;
+        } else {
+            data[key] = value;
+        }
+    });
+    const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    const result = await response.text();
+    document.getElementById('issuanceResult').innerHTML = `<div class="alert alert-info mt-3">${result}</div>`;
+});
+</script>

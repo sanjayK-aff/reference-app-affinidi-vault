@@ -119,17 +119,28 @@ namespace Affinidi_Login_Demo_App.Util
         private readonly VerificationApi _verificationApi;
         private readonly string _projectId;
 
-        public CredentialsClient(AuthProvider authProvider, string apiGatewayUrl, string projectId)
+        public CredentialsClient()
         {
-            _projectId = projectId;
+
+            AuthProviderParams authProviderParams = new AuthProviderParams
+            {
+                ProjectId = System.Environment.GetEnvironmentVariable("PROJECT_ID") ?? string.Empty,
+                TokenId = System.Environment.GetEnvironmentVariable("TOKEN_ID") ?? string.Empty,
+                KeyId = System.Environment.GetEnvironmentVariable("KEY_ID") ?? string.Empty,
+                PrivateKey = System.Environment.GetEnvironmentVariable("PRIVATE_KEY") ?? string.Empty,
+                Passphrase = System.Environment.GetEnvironmentVariable("PASSPHRASE") ?? string.Empty,
+                ApiGatewayUrl = System.Environment.GetEnvironmentVariable("API_GATEWAY_URL") ?? string.Empty,
+                TokenEndpoint = System.Environment.GetEnvironmentVariable("TOKEN_ENDPOINT") ?? string.Empty
+            };
+            AuthProvider authProvider = new AuthProvider(authProviderParams);
 
 
             // Assuming SDK configuration objects
-            var issuanceConfig = new IssuanceConfiguration { BasePath = $"{apiGatewayUrl}/cis" };
+            var issuanceConfig = new IssuanceConfiguration { BasePath = $"{authProviderParams.ApiGatewayUrl}/cis" };
             Console.WriteLine($"Issuance API Base Path: {issuanceConfig.BasePath}");
             _issuanceApi = new IssuanceApi(authProvider, issuanceConfig);
 
-            var verificationConfig = new VerificationConfiguration { BasePath = $"{apiGatewayUrl}/ver" };
+            var verificationConfig = new VerificationConfiguration { BasePath = $"{authProviderParams.ApiGatewayUrl}/ver" };
             _verificationApi = new VerificationApi(authProvider, verificationConfig);
         }
 

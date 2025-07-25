@@ -29,20 +29,29 @@ namespace Affinidi_Login_Demo_App
             // Prefill handled by property initializers
         }
 
-        public async Task OnPost()
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> OnPostAsync()
         {
-            AuthProviderParams authProviderParams = new AuthProviderParams
+            // Read JSON body from AJAX
+            string body;
+            using (var reader = new StreamReader(Request.Body))
+                body = await reader.ReadToEndAsync();
+
+            // Deserialize to dynamic object
+            var formData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(body);
+            GivenName = formData.ContainsKey("GivenName") ? formData["GivenName"]?.ToString() ?? "" : "";
+            FamilyName = formData.ContainsKey("FamilyName") ? formData["FamilyName"]?.ToString() ?? "" : "";
+            Email = formData.ContainsKey("Email") ? formData["Email"]?.ToString() ?? "" : "";
+
+            if (formData.ContainsKey("Education") && formData["Education"] is System.Text.Json.JsonElement eduElem)
             {
-                ProjectId = System.Environment.GetEnvironmentVariable("PROJECT_ID") ?? string.Empty,
-                TokenId = System.Environment.GetEnvironmentVariable("TOKEN_ID") ?? string.Empty,
-                KeyId = System.Environment.GetEnvironmentVariable("KEY_ID") ?? string.Empty,
-                PrivateKey = System.Environment.GetEnvironmentVariable("PRIVATE_KEY") ?? string.Empty,
-                Passphrase = System.Environment.GetEnvironmentVariable("PASSPHRASE") ?? string.Empty,
-                ApiGatewayUrl = System.Environment.GetEnvironmentVariable("API_GATEWAY_URL") ?? string.Empty,
-                TokenEndpoint = System.Environment.GetEnvironmentVariable("TOKEN_ENDPOINT") ?? string.Empty
-            };
-            AuthProvider authProvider = new AuthProvider(authProviderParams);
-            // var token = await authProvider.FetchProjectScopedTokenAsync();
+                var eduDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(eduElem.GetRawText());
+                Education.institutionName = eduDict.GetValueOrDefault("institutionName", "");
+                Education.dateFrom = eduDict.GetValueOrDefault("dateFrom", "");
+                Education.dateTo = eduDict.GetValueOrDefault("dateTo", "");
+            }
+
+
 
             var CredentialData = new
             {
@@ -61,13 +70,8 @@ namespace Affinidi_Login_Demo_App
                         { "dateTo", Education.dateTo }
                     }
                 }
-
             };
 
-            string CredentialDataJson = System.Text.Json.JsonSerializer.Serialize(new { CredentialData });
-            Console.WriteLine(CredentialDataJson);
-            // Console.WriteLine($"Project Scoped Token: {token}");
-            IssuanceStarted = true;
             var issuanceInput = new StartIssuanceInput
             {
                 claimMode = ClaimModeEnum.NORMAL,
@@ -82,14 +86,10 @@ namespace Affinidi_Login_Demo_App
                 }
             };
 
-            Console.WriteLine($"Issuance Input: {JsonConvert.SerializeObject(issuanceInput)}");
-            // var issuanceApi = new IssuanceApi(new HttpClient(new AuthHandler(authProvider)), new IssuanceConfiguration { BasePath = authProviderParams.ApiGatewayUrl ?? string.Empty });
-            // var response = await issuanceApi.StartIssuanceAsync(authProviderParams.ProjectId, issuanceInput);
-
-            var credentialsClient = new CredentialsClient(authProvider, authProviderParams.ApiGatewayUrl, projectId: authProviderParams.ProjectId);
+            var credentialsClient = new CredentialsClient();
             var response = await credentialsClient.IssuanceStart(issuanceInput);
-            Console.WriteLine($"Issuance Response: {JsonConvert.SerializeObject(response)}");
-
+            // Return result as JSON
+            return new JsonResult(response);
         }
     }
 }
