@@ -4,34 +4,40 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace Affinidi_Login_Demo_App.Util
 {
-    public enum ClaimModeEnum { Normal }
+    public enum ClaimModeEnum { NORMAL, TX_CODE, FIXED_HOLDER }
     // NOTE: The following classes are placeholders for the actual models from Affinidi's .NET SDKs.
     // Please replace them with the actual classes from the SDKs.
     public class StartIssuanceInput
     {
 
-        public ClaimModeEnum ClaimMode { get; set; }
-        public string? HolderDid { get; set; }
-        public CredentialData Data { get; set; } = new CredentialData();
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public ClaimModeEnum claimMode { get; set; }
+        public string? holderDid { get; set; }
+        public List<CredentialData> data { get; set; } = new List<CredentialData>();
     }
     public class CredentialData
     {
-        public string CredentialTypeId { get; set; } = string.Empty;
-        public object? Credential { get; set; }
+        public string credentialTypeId { get; set; } = string.Empty;
+        public object? credentialData { get; set; }
     }
 
     public class StartIssuanceResponse
     {
+        [JsonPropertyName("CredentialOfferUri")]
+        public string? CredentialOfferUri { get; set; }
 
-        public string CredentialOfferUri { get; set; } = string.Empty;
-
+        [JsonPropertyName("TxCode")]
         public string? TxCode { get; set; }
 
-        public string IssuanceId { get; set; } = string.Empty;
+        [JsonPropertyName("IssuanceId")]
+        public string? IssuanceId { get; set; }
 
+        [JsonPropertyName("ExpiresIn")]
         public int ExpiresIn { get; set; }
     }
 
@@ -40,7 +46,7 @@ namespace Affinidi_Login_Demo_App.Util
 
     public class VerifyPresentationResponse { }
 
-    public class ApiResponse<T> { public T Data { get; set; } }
+    public class ApiResponse<T> { public T? Data { get; set; } }
 
     public class IssuanceConfiguration { public required string BasePath { get; set; } }
 
@@ -49,32 +55,37 @@ namespace Affinidi_Login_Demo_App.Util
     {
         AuthProvider _authProvider;
         IssuanceConfiguration _config;
-        public IssuanceApi(AuthProvider authProvider, IssuanceConfiguration config) {
+        public IssuanceApi(AuthProvider authProvider, IssuanceConfiguration config)
+        {
             _authProvider = authProvider;
             _config = config;
         }
-        public virtual Task<ApiResponse<StartIssuanceResponse>> StartIssuanceAsync(string projectId, StartIssuanceInput input)
+        public virtual async Task<ApiResponse<StartIssuanceResponse>> StartIssuanceAsync(string projectId, StartIssuanceInput input)
         {
-            
-            var localVarPath = $"/v1/{Uri.EscapeDataString(projectId)}/issuance/start";
+            var localVarPath = $"cis/v1/{Uri.EscapeDataString(projectId)}/issuance/start";
             var fullUrl = new Uri(new Uri(_config.BasePath), localVarPath).ToString();
-            Console.WriteLine($"Issuance API full URL: {fullUrl}");
+            var token = await _authProvider.FetchProjectScopedTokenAsync();
+            var jsonPayload = System.Text.Json.JsonSerializer.Serialize(input);
+
+
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var request = new HttpRequestMessage(HttpMethod.Post, fullUrl)
             {
-                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(input), System.Text.Encoding.UTF8, "application/json")
+                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
             };
-            return new HttpClient().SendAsync(request)
-                .ContinueWith(responseTask =>
-                {
-                    if (responseTask.Result.IsSuccessStatusCode)
-                    {
-                        var responseBody = responseTask.Result.Content.ReadAsStringAsync().Result;
-                        var data = System.Text.Json.JsonSerializer.Deserialize<StartIssuanceResponse>(responseBody);
-                        return new ApiResponse<StartIssuanceResponse> { Data = data };
-                    }
-                    return new ApiResponse<StartIssuanceResponse> { Data = null };
-                });
-
+            var response = await httpClient.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var data = System.Text.Json.JsonSerializer.Deserialize<StartIssuanceResponse>(responseBody);
+                Console.WriteLine($"Issuance API response: {responseBody}");
+                Console.WriteLine($"Issuance API response Data: {JsonConvert.SerializeObject(data)}");
+                return new ApiResponse<StartIssuanceResponse> { Data = data };
+            }
+            Console.WriteLine($"Issuance API error: {response.StatusCode}");
+            return new ApiResponse<StartIssuanceResponse> { Data = null };
         }
         public virtual Task<ApiResponse<IssuanceStatusResponse>> GetIssuanceStatusAsync(string issuanceId, string projectId) { throw new NotImplementedException(); }
     }
@@ -106,7 +117,7 @@ namespace Affinidi_Login_Demo_App.Util
         public CredentialsClient(AuthProvider authProvider, string apiGatewayUrl, string projectId)
         {
             _projectId = projectId;
-            
+
 
             // Assuming SDK configuration objects
             var issuanceConfig = new IssuanceConfiguration { BasePath = $"{apiGatewayUrl}/cis" };
@@ -142,6 +153,6 @@ namespace Affinidi_Login_Demo_App.Util
         public VerificationApi(AuthProvider authProvider, object config) { /* SDK Implementation */ }
         public virtual Task<ApiResponse<VerifyPresentationResponse>> VerifyPresentationAsync(VerifyPresentationInput input) { throw new NotImplementedException(); }
     }
-    
+
 
 }
