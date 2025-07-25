@@ -7,38 +7,77 @@ using System.Threading.Tasks;
 
 namespace Affinidi_Login_Demo_App.Util
 {
+    public enum ClaimModeEnum { Normal }
     // NOTE: The following classes are placeholders for the actual models from Affinidi's .NET SDKs.
     // Please replace them with the actual classes from the SDKs.
     public class StartIssuanceInput
     {
-        public enum ClaimModeEnum { Normal }
+
         public ClaimModeEnum ClaimMode { get; set; }
-        public string HolderDid { get; set; }
-        public List<CredentialData> Data { get; set; }
+        public string? HolderDid { get; set; }
+        public CredentialData Data { get; set; } = new CredentialData();
     }
     public class CredentialData
     {
-        public string CredentialTypeId { get; set; }
-        public object Credential { get; set; }
+        public string CredentialTypeId { get; set; } = string.Empty;
+        public object? Credential { get; set; }
     }
-    public class StartIssuanceResponse { /* Properties from SDK response */ }
-    public class IssuanceStatusResponse { /* Properties from SDK response */ }
-    public class VerifyPresentationInput { /* Properties from SDK request */ }
-    public class VerifyPresentationResponse { /* Properties from SDK response */ }
+
+    public class StartIssuanceResponse
+    {
+
+        public string CredentialOfferUri { get; set; } = string.Empty;
+
+        public string? TxCode { get; set; }
+
+        public string IssuanceId { get; set; } = string.Empty;
+
+        public int ExpiresIn { get; set; }
+    }
+
+    public class IssuanceStatusResponse { }
+    public class VerifyPresentationInput { }
+
+    public class VerifyPresentationResponse { }
+
+    public class ApiResponse<T> { public T Data { get; set; } }
+
+    public class IssuanceConfiguration { public required string BasePath { get; set; } }
+
+    public class VerificationConfiguration { public required string BasePath { get; set; } }
     public class IssuanceApi
     {
-        public IssuanceApi(HttpClient client, object config) { /* SDK Implementation */ }
-        public virtual Task<ApiResponse<StartIssuanceResponse>> StartIssuanceAsync(string projectId, StartIssuanceInput input) { throw new NotImplementedException(); }
+        AuthProvider _authProvider;
+        IssuanceConfiguration _config;
+        public IssuanceApi(AuthProvider authProvider, IssuanceConfiguration config) {
+            _authProvider = authProvider;
+            _config = config;
+        }
+        public virtual Task<ApiResponse<StartIssuanceResponse>> StartIssuanceAsync(string projectId, StartIssuanceInput input)
+        {
+            
+            var localVarPath = $"/v1/{Uri.EscapeDataString(projectId)}/issuance/start";
+            var fullUrl = new Uri(new Uri(_config.BasePath), localVarPath).ToString();
+            Console.WriteLine($"Issuance API full URL: {fullUrl}");
+            var request = new HttpRequestMessage(HttpMethod.Post, fullUrl)
+            {
+                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(input), System.Text.Encoding.UTF8, "application/json")
+            };
+            return new HttpClient().SendAsync(request)
+                .ContinueWith(responseTask =>
+                {
+                    if (responseTask.Result.IsSuccessStatusCode)
+                    {
+                        var responseBody = responseTask.Result.Content.ReadAsStringAsync().Result;
+                        var data = System.Text.Json.JsonSerializer.Deserialize<StartIssuanceResponse>(responseBody);
+                        return new ApiResponse<StartIssuanceResponse> { Data = data };
+                    }
+                    return new ApiResponse<StartIssuanceResponse> { Data = null };
+                });
+
+        }
         public virtual Task<ApiResponse<IssuanceStatusResponse>> GetIssuanceStatusAsync(string issuanceId, string projectId) { throw new NotImplementedException(); }
     }
-    public class VerificationApi
-    {
-        public VerificationApi(HttpClient client, object config) { /* SDK Implementation */ }
-        public virtual Task<ApiResponse<VerifyPresentationResponse>> VerifyPresentationAsync(VerifyPresentationInput input) { throw new NotImplementedException(); }
-    }
-    public class ApiResponse<T> { public T Data { get; set; } }
-    public class IssuanceConfiguration { public string BasePath { get; set; } }
-    public class VerificationConfiguration { public string BasePath { get; set; } }
 
     // Custom DelegatingHandler to add the auth token to each request
     public class AuthHandler : DelegatingHandler
@@ -67,18 +106,20 @@ namespace Affinidi_Login_Demo_App.Util
         public CredentialsClient(AuthProvider authProvider, string apiGatewayUrl, string projectId)
         {
             _projectId = projectId;
-            var httpClient = new HttpClient(new AuthHandler(authProvider));
+            
 
             // Assuming SDK configuration objects
             var issuanceConfig = new IssuanceConfiguration { BasePath = $"{apiGatewayUrl}/cis" };
-            _issuanceApi = new IssuanceApi(httpClient, issuanceConfig);
+            Console.WriteLine($"Issuance API Base Path: {issuanceConfig.BasePath}");
+            _issuanceApi = new IssuanceApi(authProvider, issuanceConfig);
 
             var verificationConfig = new VerificationConfiguration { BasePath = $"{apiGatewayUrl}/ver" };
-            _verificationApi = new VerificationApi(httpClient, verificationConfig);
+            _verificationApi = new VerificationApi(authProvider, verificationConfig);
         }
 
         public async Task<StartIssuanceResponse> IssuanceStart(StartIssuanceInput apiData)
         {
+            Console.WriteLine($"StartIssuanceAsync called with Project ID: {_projectId}");
             var response = await _issuanceApi.StartIssuanceAsync(_projectId, apiData);
             return response.Data;
         }
@@ -96,4 +137,11 @@ namespace Affinidi_Login_Demo_App.Util
             return response.Data;
         }
     }
+    public class VerificationApi
+    {
+        public VerificationApi(AuthProvider authProvider, object config) { /* SDK Implementation */ }
+        public virtual Task<ApiResponse<VerifyPresentationResponse>> VerifyPresentationAsync(VerifyPresentationInput input) { throw new NotImplementedException(); }
+    }
+    
+
 }

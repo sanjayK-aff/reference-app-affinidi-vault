@@ -41,7 +41,7 @@ namespace Affinidi_Login_Demo_App.Util
 
         public AuthProvider(AuthProviderParams param)
         {
-            apiGatewayUrl = param.ApiGatewayUrl ?? "https://dummy-api-gw-url";
+            apiGatewayUrl = param.ApiGatewayUrl ?? "";
             tokenEndpoint = param.TokenEndpoint ?? "https://dummy-token-endpoint";
             if (string.IsNullOrEmpty(param.PrivateKey) || string.IsNullOrEmpty(param.ProjectId) || string.IsNullOrEmpty(param.TokenId))
             {

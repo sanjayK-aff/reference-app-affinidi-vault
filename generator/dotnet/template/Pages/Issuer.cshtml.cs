@@ -1,6 +1,7 @@
 using Affinidi_Login_Demo_App.Util;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Newtonsoft.Json;
 
 namespace Affinidi_Login_Demo_App
 {
@@ -32,11 +33,38 @@ namespace Affinidi_Login_Demo_App
                 TokenEndpoint = System.Environment.GetEnvironmentVariable("TOKEN_ENDPOINT") ?? string.Empty
             };
             AuthProvider authProvider = new AuthProvider(authProviderParams);
-            var token = await authProvider.FetchProjectScopedTokenAsync();
+            // var token = await authProvider.FetchProjectScopedTokenAsync();
 
-            
-            Console.WriteLine($"Project Scoped Token: {token}");
+            var personalInformation = new
+            {
+                firstName = GivenName,
+                middleName = "",
+                lastName = FamilyName,
+                email = Email
+            };
+
+            string personalInformationJson = System.Text.Json.JsonSerializer.Serialize(new { personalInformation });
+            Console.WriteLine(personalInformationJson);
+            // Console.WriteLine($"Project Scoped Token: {token}");
             IssuanceStarted = true;
+            var issuanceInput = new StartIssuanceInput
+            {
+                ClaimMode = ClaimModeEnum.Normal,
+                HolderDid = "",
+                Data = new CredentialData
+                {
+                    CredentialTypeId = Environment.GetEnvironmentVariable("PUBLIC_CREDENTIAL_TYPE_ID") ?? string.Empty,
+                    Credential = personalInformation
+                }
+            };
+            Console.WriteLine($"Issuance Input: {JsonConvert.SerializeObject(issuanceInput)}");
+            // var issuanceApi = new IssuanceApi(new HttpClient(new AuthHandler(authProvider)), new IssuanceConfiguration { BasePath = authProviderParams.ApiGatewayUrl ?? string.Empty });
+            // var response = await issuanceApi.StartIssuanceAsync(authProviderParams.ProjectId, issuanceInput);
+
+            var credentialsClient = new CredentialsClient(authProvider, authProviderParams.ApiGatewayUrl, projectId: authProviderParams.ProjectId);
+            var response = await credentialsClient.IssuanceStart(issuanceInput);
+            Console.WriteLine($"Issuance Response: {response}");
+
         }
     }
 }
