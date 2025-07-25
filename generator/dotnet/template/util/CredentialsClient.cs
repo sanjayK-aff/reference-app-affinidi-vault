@@ -15,7 +15,7 @@ namespace Affinidi_Login_Demo_App.Util
     public class StartIssuanceInput
     {
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]
         public ClaimModeEnum claimMode { get; set; }
         public string? holderDid { get; set; }
         public List<CredentialData> data { get; set; } = new List<CredentialData>();
@@ -28,17 +28,19 @@ namespace Affinidi_Login_Demo_App.Util
 
     public class StartIssuanceResponse
     {
-        [JsonPropertyName("CredentialOfferUri")]
+        [JsonPropertyName("credentialOfferUri")]
         public string? CredentialOfferUri { get; set; }
 
-        [JsonPropertyName("TxCode")]
-        public string? TxCode { get; set; }
-
-        [JsonPropertyName("IssuanceId")]
+        [JsonPropertyName("issuanceId")]
         public string? IssuanceId { get; set; }
 
-        [JsonPropertyName("ExpiresIn")]
+        [JsonPropertyName("expiresIn")]
         public int ExpiresIn { get; set; }
+
+        [JsonPropertyName("txCode")]
+        public string? TxCode { get; set; }
+
+
     }
 
     public class IssuanceStatusResponse { }
@@ -81,7 +83,10 @@ namespace Affinidi_Login_Demo_App.Util
                 var responseBody = await response.Content.ReadAsStringAsync();
                 var data = System.Text.Json.JsonSerializer.Deserialize<StartIssuanceResponse>(responseBody);
                 Console.WriteLine($"Issuance API response: {responseBody}");
-                Console.WriteLine($"Issuance API response Data: {JsonConvert.SerializeObject(data)}");
+                Console.WriteLine($"CredentialOfferUri: {data?.CredentialOfferUri}");
+                Console.WriteLine($"IssuanceId: {data?.IssuanceId}");
+                Console.WriteLine($"ExpiresIn: {data?.ExpiresIn}");
+                Console.WriteLine($"TxCode: {data?.TxCode}");
                 return new ApiResponse<StartIssuanceResponse> { Data = data };
             }
             Console.WriteLine($"Issuance API error: {response.StatusCode}");
