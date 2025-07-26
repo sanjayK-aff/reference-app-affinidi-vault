@@ -117,12 +117,12 @@ namespace Affinidi_Login_Demo_App.Util
     {
         private readonly IssuanceApi _issuanceApi;
         private readonly VerificationApi _verificationApi;
-        private readonly string _projectId;
+        private readonly AuthProviderParams _authProviderParams;
 
         public CredentialsClient()
         {
 
-            AuthProviderParams authProviderParams = new AuthProviderParams
+            _authProviderParams = new AuthProviderParams
             {
                 ProjectId = System.Environment.GetEnvironmentVariable("PROJECT_ID") ?? string.Empty,
                 TokenId = System.Environment.GetEnvironmentVariable("TOKEN_ID") ?? string.Empty,
@@ -132,28 +132,28 @@ namespace Affinidi_Login_Demo_App.Util
                 ApiGatewayUrl = System.Environment.GetEnvironmentVariable("API_GATEWAY_URL") ?? string.Empty,
                 TokenEndpoint = System.Environment.GetEnvironmentVariable("TOKEN_ENDPOINT") ?? string.Empty
             };
-            AuthProvider authProvider = new AuthProvider(authProviderParams);
+            AuthProvider authProvider = new AuthProvider(_authProviderParams);
 
 
             // Assuming SDK configuration objects
-            var issuanceConfig = new IssuanceConfiguration { BasePath = $"{authProviderParams.ApiGatewayUrl}/cis" };
+            var issuanceConfig = new IssuanceConfiguration { BasePath = $"{_authProviderParams.ApiGatewayUrl}/cis" };
             Console.WriteLine($"Issuance API Base Path: {issuanceConfig.BasePath}");
             _issuanceApi = new IssuanceApi(authProvider, issuanceConfig);
 
-            var verificationConfig = new VerificationConfiguration { BasePath = $"{authProviderParams.ApiGatewayUrl}/ver" };
+            var verificationConfig = new VerificationConfiguration { BasePath = $"{_authProviderParams.ApiGatewayUrl}/ver" };
             _verificationApi = new VerificationApi(authProvider, verificationConfig);
         }
 
         public async Task<StartIssuanceResponse> IssuanceStart(StartIssuanceInput apiData)
         {
-            Console.WriteLine($"StartIssuanceAsync called with Project ID: {_projectId}");
-            var response = await _issuanceApi.StartIssuanceAsync(_projectId, apiData);
+            Console.WriteLine($"StartIssuanceAsync called with Project ID: {_authProviderParams.ProjectId}");
+            var response = await _issuanceApi.StartIssuanceAsync(_authProviderParams.ProjectId, apiData);
             return response.Data;
         }
 
         public async Task<IssuanceStatusResponse> IssuanceStatus(string issuanceId)
         {
-            var response = await _issuanceApi.GetIssuanceStatusAsync(issuanceId, _projectId);
+            var response = await _issuanceApi.GetIssuanceStatusAsync(issuanceId, _authProviderParams.ProjectId);
             return response.Data;
         }
 

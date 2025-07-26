@@ -38,25 +38,6 @@ namespace Affinidi_Login_Demo_App
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> OnPostAsync()
         {
-            // Read JSON body from AJAX
-            string body;
-            using (var reader = new StreamReader(Request.Body))
-                body = await reader.ReadToEndAsync();
-
-            // Deserialize to dynamic object
-            var formData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(body);
-            GivenName = formData.ContainsKey("GivenName") ? formData["GivenName"]?.ToString() ?? "" : "";
-            FamilyName = formData.ContainsKey("FamilyName") ? formData["FamilyName"]?.ToString() ?? "" : "";
-            Email = formData.ContainsKey("Email") ? formData["Email"]?.ToString() ?? "" : "";
-
-            if (formData.ContainsKey("Education") && formData["Education"] is System.Text.Json.JsonElement eduElem)
-            {
-                var eduDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(eduElem.GetRawText());
-                Education.institutionName = eduDict.GetValueOrDefault("institutionName", "");
-                Education.dateFrom = eduDict.GetValueOrDefault("dateFrom", "");
-                Education.dateTo = eduDict.GetValueOrDefault("dateTo", "");
-            }
-
 
 
             var CredentialData = new
@@ -101,6 +82,7 @@ namespace Affinidi_Login_Demo_App
             IssuanceFinished = true;
             Console.WriteLine($"Issuance Response: {JsonConvert.SerializeObject(issuanceResponse)}");
 
+            return Page();
         }
     }
 }
