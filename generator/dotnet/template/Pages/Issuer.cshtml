@@ -8,64 +8,76 @@
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h2 class="mb-4">Personal & Education Details</h2>
-                    <form id="issuerForm">
-                        <div class="mb-3">
-                            <label for="givenName" class="form-label">Given Name</label>
-                            <input type="text" class="form-control" id="givenName" name="GivenName" value="@Model.GivenName" />
+                    <h2 class="mb-4">Personal Details</h2>
+                    @if (!Model.IssuanceFinished)
+                    {
+                        <form method="post">
+                            <div class="mb-3">
+                                <label for="givenName" class="form-label">Given Name</label>
+                                <input type="text" class="form-control" id="givenName" name="GivenName" value="@Model.GivenName" />
+                            </div>
+                            <div class="mb-3">
+                                <label for="familyName" class="form-label">Family Name</label>
+                                <input type="text" class="form-control" id="familyName" name="FamilyName" value="@Model.FamilyName" />
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" />
+                            </div>
+                            <hr />
+                            <h5 class="mb-3">Education Details
+
+                            </h5>
+                            <div class="mb-3">
+                                <label for="institutionName" class="form-label">Institution Name</label>
+                                <input type="text" class="form-control" id="institutionName" name="Education.institutionName" value="@Model.Education?.institutionName " />
+                            </div>
+                            <div class="mb-3">
+                                <label for="dateFrom" class="form-label">Date From</label>
+                                <input type="text" class="form-control" id="dateFrom" name="Education.dateFrom" value="@Model.Education?.dateFrom " />
+                            </div>
+                            <div class="mb-3">
+                                <label for="dateTo" class="form-label">Date To</label>
+                                <input type="text" class="form-control" id="dateTo" name="Education.dateTo" value="@Model.Education?.dateTo" />
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 rounded-pill">Start Issuance</button>
+                        </form>
+                        @if (Model.IssuanceStarted)
+                        {
+                            <div class="alert alert-info mt-3">Issuance started (dummy method called).</div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-success mt-3">
+                            <h4>Issuance Completed!</h4>
+                            <h5>Claim your credential!</h5>
+                            <div class="mb-3">
+                                <p>Scan the QR code below or click the button to claim your credentials.</p>
+                                @if (!string.IsNullOrEmpty(Model.issuanceResponse.CredentialOfferUri))
+                                {
+                                    <!-- QR code image generated from CredentialOfferUri -->
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@Model.claimUrl"alt="QR Code" class="mb-2 d-block mx-auto" />
+                                }
+                                else
+                                {
+                                    <div class="text-danger">No QR code available.</div>
+                                }
+                            </div>
+                            <div class="mb-3 text-center">
+                                @if (!string.IsNullOrEmpty(Model.CredentialOfferUri))
+                                {
+                                    <a href="@Model.claimUrl" target="_blank" class="btn btn-primary rounded-pill">Claim Credential</a>
+                                }
+                            </div>
+                            <pre><code>@Model.IssuanceResponseJson</code></pre>
                         </div>
-                        <div class="mb-3">
-                            <label for="familyName" class="form-label">Family Name</label>
-                            <input type="text" class="form-control" id="familyName" name="FamilyName" value="@Model.FamilyName" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" />
-                        </div>
-                        <hr />
-                        <h5 class="mb-3">Education Details</h5>
-                        <div class="mb-3">
-                            <label for="institutionName" class="form-label">Institution Name</label>
-                            <input type="text" class="form-control" id="institutionName" name="Education.institutionName" value="@Model.Education.institutionName" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="dateFrom" class="form-label">Date From</label>
-                            <input type="text" class="form-control" id="dateFrom" name="Education.dateFrom" value="@Model.Education.dateFrom" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="dateTo" class="form-label">Date To</label>
-                            <input type="text" class="form-control" id="dateTo" name="Education.dateTo" value="@Model.Education.dateTo" />
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 rounded-pill">Start Issuance</button>
-                    </form>
-                    <div id="issuanceResult"></div>
+                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-document.getElementById('issuerForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = {};
-    formData.forEach((value, key) => {
-        // Support nested Education fields
-        if (key.startsWith('Education.')) {
-            if (!data.Education) data.Education = {};
-            data.Education[key.replace('Education.', '')] = value;
-        } else {
-            data[key] = value;
-        }
-    });
-    const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    const result = await response.text();
-    document.getElementById('issuanceResult').innerHTML = `<div class="alert alert-info mt-3">${result}</div>`;
-});
-</script>
+@* https://vault.affinidi.com/claim?credential_offer_uri=https://cbdea4ac-0c07-44de-b42f-2cb6a6a2f8dc.apse1.issuance.affinidi.io/offers/4162ee34-e36a-4af4-ad8e-d9f853b4b696 *@
+@* https://vault.affinidi.com/claim?credential_offer_uri=https://cbdea4ac-0c07-44de-b42f-2cb6a6a2f8dc.apse1.issuance.affinidi.io/offers/965ab58d-bb36-4c5d-af3c-9118d228a291 *@

@@ -22,6 +22,12 @@ namespace Affinidi_Login_Demo_App
         [BindProperty]
         public educationDetails Education { get; set; } = new educationDetails();
         public bool IssuanceStarted { get; set; } = false;
+        public bool IssuanceFinished { get; set; } = false;
+        public string IssuanceResponseJson { get; set; } = "";
+        public StartIssuanceResponse issuanceResponse { get; set; } = new StartIssuanceResponse();
+        public string CredentialOfferUri { get; set; } = "";
+        public string vaultUrl { get; set; } = Environment.GetEnvironmentVariable("PUBLIC_VAULT_URL") ?? "https://vault.affinidi.com";
+        public string claimUrl { get; set; } = "";
 
 
         public void OnGet()
@@ -74,8 +80,8 @@ namespace Affinidi_Login_Demo_App
 
             var issuanceInput = new StartIssuanceInput
             {
-                claimMode = ClaimModeEnum.NORMAL,
-                holderDid = "did:key:zQ3shmB5BLKAgukNpe8e7TA93kuEGBgNjP5X6dDYvd1WyGzgT",
+                claimMode = ClaimModeEnum.TX_CODE,
+                holderDid = "did:key:zQ3shZ5XvgFEiuLeBofUKk3QzHpEMpcfHYnPKVyDSdkKrkwqX",
                 data = new List<CredentialData>
                 {
                     new CredentialData
@@ -87,9 +93,14 @@ namespace Affinidi_Login_Demo_App
             };
 
             var credentialsClient = new CredentialsClient();
-            var response = await credentialsClient.IssuanceStart(issuanceInput);
-            // Return result as JSON
-            return new JsonResult(response);
+            issuanceResponse = await credentialsClient.IssuanceStart(issuanceInput);
+            CredentialOfferUri = issuanceResponse?.CredentialOfferUri ?? "";
+            IssuanceResponseJson = JsonConvert.SerializeObject(issuanceResponse);
+            claimUrl = $"{vaultUrl}{Uri.EscapeDataString(CredentialOfferUri)}";
+            Console.WriteLine($"Claim URL: {claimUrl}");
+            IssuanceFinished = true;
+            Console.WriteLine($"Issuance Response: {JsonConvert.SerializeObject(issuanceResponse)}");
+
         }
     }
 }
